@@ -12,8 +12,7 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 def send_telegram_message(message):
     if not BOT_TOKEN or not CHAT_ID:
-        print("HATA: Telegram Token veya Chat ID bulunamadı!")
-        return
+        return False, "HATA: TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID bulunamadı!"
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
@@ -22,16 +21,18 @@ def send_telegram_message(message):
     }
     try:
         res = requests.post(url, json=payload, timeout=10)
-        print(f"Telegram API Yanıtı: {res.status_code} - {res.text}")
+        if res.status_code == 200:
+            return True, "Mesaj başarıyla gönderildi!"
+        else:
+            return False, f"Telegram Yanıt Hatası ({res.status_code}): {res.text}"
     except Exception as e:
-        print(f"Gönderim hatası: {e}")
+        return False, f"Bağlantı Hatası: {str(e)}"
 
 def su_hatirlatici_loop():
-    # Türkiye Saati (UTC+3)
     turkey_tz = timezone(timedelta(hours=3))
     last_sent_hour = -1
 
-    # İlk Çalışma Mesajı (Açılış)
+    # Açılış Mesajı
     send_telegram_message(
         "🥤 <b>Su Hatırlatıcı Ajanınız Göreve Başladı!</b>\n\n"
         "📊 <b>Kişisel Analiz:</b> 75 kg kilonuza göre günlük su ihtiyacınız <b>2.6 Litre</b> (~13 bardak).\n"
@@ -42,7 +43,6 @@ def su_hatirlatici_loop():
         now = datetime.now(turkey_tz)
         current_hour = now.hour
 
-        # 08:00 ile 22:00 saatleri arasında her saat başı mesaj at
         if 8 <= current_hour <= 22 and current_hour != last_sent_hour:
             msg = (
                 f"💧 <b>Su Molası Zamanı!</b> (Saat: {now.strftime('%H:00')})\n\n"
@@ -52,17 +52,23 @@ def su_hatirlatici_loop():
             send_telegram_message(msg)
             last_sent_hour = current_hour
 
-        time.sleep(30)  # 30 saniyede bir saati kontrol et
+        time.sleep(30)
 
 @app.route('/')
 def home():
     return "Su Hatırlatıcı Ajanı 7/24 Aktif!", 200
 
+# Canlı Test Bağlantısı
+@app.route('/test')
+def test_msg():
+    success, response_text = send_telegram_message(
+        "🧪 <b>Test Mesajı:</b> Su botu bağlantısı başarıyla doğrulandı!"
+    )
+    return f"<h2>Test Sonucu</h2><p>{response_text}</p>", 200
+
 if __name__ == "__main__":
-    # Arka planda su zamanlayıcısını başlat
     t = threading.Thread(target=su_hatirlatici_loop, daemon=True)
     t.start()
 
-    # Web sunucusunu başlat (Render için)
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
