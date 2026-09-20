@@ -18,10 +18,11 @@ def send_telegram_message(message):
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown"
+        "parse_mode": "HTML"
     }
     try:
-        requests.post(url, json=payload, timeout=10)
+        res = requests.post(url, json=payload, timeout=10)
+        print(f"Telegram API Yanıtı: {res.status_code} - {res.text}")
     except Exception as e:
         print(f"Gönderim hatası: {e}")
 
@@ -30,11 +31,11 @@ def su_hatirlatici_loop():
     turkey_tz = timezone(timedelta(hours=3))
     last_sent_hour = -1
 
-    # İlk Çalışma Mesajı
+    # İlk Çalışma Mesajı (Açılış)
     send_telegram_message(
-        "🥤 *Su Hatırlatıcı Ajanınız Göreve Başladı!*\n\n"
-        "📊 *Kişisel Analiz:* 75 kg kilonuza göre günlük su ihtiyacınız **2.6 Litre** (~13 bardak).\n"
-        "⏰ Her gün **08:00 – 22:00** saatleri arasında her saat başı size 1 bardak su içmenizi hatırlatacağım!"
+        "🥤 <b>Su Hatırlatıcı Ajanınız Göreve Başladı!</b>\n\n"
+        "📊 <b>Kişisel Analiz:</b> 75 kg kilonuza göre günlük su ihtiyacınız <b>2.6 Litre</b> (~13 bardak).\n"
+        "⏰ Her gün <b>08:00 – 22:00</b> saatleri arasında her saat başı size 1 bardak su içmenizi hatırlatacağım!"
     )
 
     while True:
@@ -44,9 +45,9 @@ def su_hatirlatici_loop():
         # 08:00 ile 22:00 saatleri arasında her saat başı mesaj at
         if 8 <= current_hour <= 22 and current_hour != last_sent_hour:
             msg = (
-                f"💧 *Su Molası Zamanı!* (Saat: {now.strftime('%H:00')})\n\n"
-                f"Günlük hedefinize ulaşmak için lütfen şimdi **1 bardak (200 ml)** taze su için. 🥤\n\n"
-                f"*(Günlük Toplam Hedef: 2.6 Litre)*"
+                f"💧 <b>Su Molası Zamanı!</b> (Saat: {now.strftime('%H:00')})\n\n"
+                f"Günlük hedefinize ulaşmak için lütfen şimdi <b>1 bardak (200 ml)</b> taze su için. 🥤\n\n"
+                f"<i>(Günlük Toplam Hedef: 2.6 Litre)</i>"
             )
             send_telegram_message(msg)
             last_sent_hour = current_hour
